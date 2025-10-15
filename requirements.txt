@@ -1,0 +1,5 @@
+flask>=2.0
+openai>=1.0
+transformers>=4.0
+openai>=0.27.0
+transformers>=4.0.0

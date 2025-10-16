@@ -237,7 +237,10 @@ def transcribe_audio(filepath: str) -> str:
                         j = stat.json()
                         status = j.get('status')
                         if status == 'completed':
-                            return j.get('text', '') or ''
+                            transcript = j.get('text', '') or ''
+                            # Format transcript as paragraphs: break after sentences
+                            transcript = transcript.replace('. ', '.\n').replace('? ', '?\n').replace('! ', '!\n')
+                            return transcript
                         if status == 'error':
                             break
             # fallback to other methods if upload failed
@@ -254,8 +257,14 @@ def transcribe_audio(filepath: str) -> str:
                 resp = openai.Audio.transcribe('gpt-4o-transcribe', f)
                 # resp may vary by SDK; try to extract text
                 if isinstance(resp, dict):
-                    return resp.get('text') or resp.get('transcript') or ''
-                return str(resp)
+                    transcript = resp.get('text') or resp.get('transcript') or ''
+                    # Format transcript as paragraphs: break after sentences
+                    transcript = transcript.replace('. ', '.\n').replace('? ', '?\n').replace('! ', '!\n')
+                    return transcript
+                transcript = str(resp)
+                # Format transcript as paragraphs: break after sentences
+                transcript = transcript.replace('. ', '.\n').replace('? ', '?\n').replace('! ', '!\n')
+                return transcript
         except Exception:
             # if OpenAI isn't usable, fall through
             pass
@@ -296,12 +305,16 @@ def summarize_and_actions_with_llm(transcript: str) -> Tuple[str, str]:
                     summary = parts[0].strip()
                     actions = parts[1].strip()
                     break
+            # Format summary as paragraphs: break after sentences
+            summary = summary.replace('. ', '.\n').replace('? ', '?\n').replace('! ', '!\n')
             return summary, actions
         except Exception:
             pass
 
     # Fallback heuristic: use extractive summarizer + find action sentences
     summary = summarize(transcript, num_sentences=3)
+    # Format summary as paragraphs: break after sentences
+    summary = summary.replace('. ', '.\n').replace('? ', '?\n').replace('! ', '!\n')
     # action sentences often start with verbs or contain 'will'/'action'/'due'
     actions = []
     sents = _sent_tokenize(transcript)
